@@ -122,6 +122,7 @@
                                 <th class="p-4">Resource Person</th>
                                 <th class="p-4">Province</th>
                                 <th class="p-4">Municipality</th>
+                                <th class="p-4">Gender</th>
                                 <th class="p-4 text-center">Action Deck</th>
                             </tr>
                         </thead>

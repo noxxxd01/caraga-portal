@@ -50,9 +50,6 @@
                 <button onclick="setActiveTab('pmt-downloads')" id="nav-btn-pmt-downloads" class="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/50 transition-all">
                     <i class="fa-solid fa-cloud-arrow-down mr-1 text-amber-400"></i> PMT Downloads Registry
                 </button>
-                <button onclick="setActiveTab('api-explorer')" id="nav-btn-api-explorer" class="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all">
-                    <i class="fa-solid fa-code mr-1"></i> Simulated REST API
-                </button>
             </div>
         </div>
     </header>

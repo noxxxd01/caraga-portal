@@ -4,42 +4,42 @@
  */
 
 function rebuildDownloadsRegistry() {
-  fetch('api/downloads_get.php', { cache: 'no-store' })
+  fetch("api/downloads_get.php", { cache: "no-store" })
     .then((res) => res.json())
     .then((res) => {
-      console.log('downloads_get.php response:', res); // TEMP debug line — remove once fixed
+      console.log("downloads_get.php response:", res); // TEMP debug line — remove once fixed
 
-      if (res.status === 'success') {
+      if (res.status === "success") {
         pmtDownloads = res.downloads;
 
-        const ledgerSelect = document.getElementById('download-ledger-select');
+        const ledgerSelect = document.getElementById("download-ledger-select");
         if (ledgerSelect) {
           const previousSelection = ledgerSelect.value;
           ledgerSelect.innerHTML =
             '<option value="">Select a registered download...</option>' +
             pmtDownloads
               .map((dl) => `<option value="${dl.id}">${dl.title}</option>`)
-              .join('');
+              .join("");
           if (pmtDownloads.some((dl) => dl.id === previousSelection)) {
             ledgerSelect.value = previousSelection;
           }
         }
 
-        const tableBody = document.getElementById('downloads-table-body');
-        const emptyState = document.getElementById('downloads-empty-state');
-        const summaryDeck = document.getElementById('downloads-summary-deck');
-        tableBody.innerHTML = '';
+        const tableBody = document.getElementById("downloads-table-body");
+        const emptyState = document.getElementById("downloads-empty-state");
+        const summaryDeck = document.getElementById("downloads-summary-deck");
+        tableBody.innerHTML = "";
 
         if (pmtDownloads.length === 0) {
-          emptyState.classList.remove('hidden');
-          summaryDeck.innerHTML = '';
+          emptyState.classList.remove("hidden");
+          summaryDeck.innerHTML = "";
           const ledgerContainer = document.getElementById(
-            'download-ledger-container',
+            "download-ledger-container",
           );
-          if (ledgerContainer) ledgerContainer.classList.add('hidden');
+          if (ledgerContainer) ledgerContainer.classList.add("hidden");
           return;
         } else {
-          emptyState.classList.add('hidden');
+          emptyState.classList.add("hidden");
         }
 
         let dlTargetSum = 0;
@@ -50,19 +50,19 @@ function rebuildDownloadsRegistry() {
           dlTargetSum += parseInt(dl.target_trainings || 0);
           dlBudgetSum += parseFloat(rowTotalBudget || 0);
 
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-slate-50 transition-colors';
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 transition-colors";
           tr.innerHTML = `
                                 <td class="p-3 align-top font-bold text-slate-900">${dl.title}</td>
                                 <td class="p-3 align-top">
-                                    <span class="bg-blue-50 text-blue-800 font-extrabold px-2 py-0.5 rounded text-[10px]">${dl.course_type || 'Mixed Allocations'}</span>
+                                    <span class="bg-blue-50 text-blue-800 font-extrabold px-2 py-0.5 rounded text-[10px]">${dl.course_type || "Mixed Allocations"}</span>
                                 </td>
-                                <td class="p-3 align-top font-medium text-slate-600">${dl.duration_hours || 'Full Catalog'}</td>
+                                <td class="p-3 align-top font-medium text-slate-600">${dl.duration_hours || "Full Catalog"}</td>
                                 <td class="p-3 align-top text-center font-extrabold text-blue-600">${dl.target_trainings}</td>
                                 <td class="p-3 align-top text-right font-semibold">${formatCurrency(dl.unit_budget)}</td>
                                 <td class="p-3 align-top text-right font-black text-slate-800">${formatCurrency(rowTotalBudget)}</td>
                                 <td class="p-3 align-top font-mono font-bold text-purple-600">${dl.subaro_code}</td>
-                                <td class="p-3 align-top font-mono font-bold text-slate-500">${dl.uacs_code || '5020201000'}</td>
+                                <td class="p-3 align-top font-mono font-bold text-slate-500">${dl.uacs_code || "5020201000"}</td>
                                 <td class="p-3 align-top text-center whitespace-nowrap">
                                     <div class="flex items-center justify-center gap-1.5">
                                         <button onclick="openDownloadModal('${dl.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded" title="Edit Properties">
@@ -98,181 +98,68 @@ function rebuildDownloadsRegistry() {
       } else {
         // This branch was completely missing before — an API-level error
         // (bad SQL, missing table, etc.) was failing silently with zero feedback.
-        console.error('downloads_get.php returned an error:', res.message);
+        console.error("downloads_get.php returned an error:", res.message);
         Swal.fire(
-          'Load Failed',
-          res.message || 'Could not load the PMT Downloads Registry.',
-          'error',
+          "Load Failed",
+          res.message || "Could not load the PMT Downloads Registry.",
+          "error",
         );
       }
     })
     .catch((err) => {
       // This catch was also completely missing — a network failure, a 500
       // error, or malformed (non-JSON) PHP output would all die silently here.
-      console.error('Failed to fetch downloads_get.php:', err);
+      console.error("Failed to fetch downloads_get.php:", err);
       Swal.fire(
-        'Load Failed',
-        'Could not reach the server to load the Downloads Registry.',
-        'error',
+        "Load Failed",
+        "Could not reach the server to load the Downloads Registry.",
+        "error",
       );
     });
-}
-
-function rebuildPMTWidgets() {
-  // ICT / Webinar per-duration target counts now come from the PMT
-  // Downloads Registry (target_trainings summed per duration bucket),
-  // not from the Training Tracker.
-  let ictTotal = 0,
-    ict16 = 0,
-    ict20 = 0,
-    ict40 = 0;
-  let webTotal = 0,
-    web2 = 0,
-    web3 = 0,
-    web4 = 0;
-
-  pmtDownloads.forEach((dl) => {
-    const dlTarget = parseInt(dl.target_trainings) || 0;
-    const durationNum =
-      parseInt((dl.duration_hours || '').replace(/[^0-9]/g, '')) || 0;
-
-    if (dl.course_type === 'ICT Training') {
-      ictTotal += dlTarget;
-      if (durationNum === 16) ict16 += dlTarget;
-      else if (durationNum === 20) ict20 += dlTarget;
-      else if (durationNum === 40) ict40 += dlTarget;
-    } else if (dl.course_type === 'Webinar') {
-      webTotal += dlTarget;
-      if (durationNum === 2) web2 += dlTarget;
-      else if (durationNum === 3) web3 += dlTarget;
-      else if (durationNum === 4) web4 += dlTarget;
-    }
-  });
-
-  document.getElementById('ict-total-badge').innerText = `${ictTotal} Total`;
-  document.getElementById('ict-16h-val').innerText = ict16;
-  document.getElementById('ict-20h-val').innerText = ict20;
-  document.getElementById('ict-40h-val').innerText = ict40;
-
-  document.getElementById('webinar-total-badge').innerText =
-    `${webTotal} Total`;
-  document.getElementById('web-2h-val').innerText = web2;
-  document.getElementById('web-3h-val').innerText = web3;
-  document.getElementById('web-4h-val').innerText = web4;
-
-  // Region-wide budget figures (same source as everywhere else)
-  const totalAllocated = pmtDownloads.reduce(
-    (sum, dl) =>
-      sum +
-      parseFloat(dl.target_trainings || 0) * parseFloat(dl.unit_budget || 0),
-    0,
-  );
-  const totalUtilizedAll = db.reduce(
-    (sum, t) => sum + parseFloat(t.budget_utilized || 0),
-    0,
-  );
-  const remainingBudgetAll = totalAllocated - totalUtilizedAll;
-  const perTargetRemainingBudget =
-    globalTarget > 0 ? remainingBudgetAll / globalTarget : 0;
-
-  // Financial Expenditure Summary column (now the only place these render)
-  document.getElementById('card-budget-allocated').innerText =
-    formatCurrency(totalAllocated);
-  document.getElementById('card-budget-utilized').innerText =
-    formatCurrency(totalUtilizedAll);
-  document.getElementById('card-budget-remaining').innerText =
-    formatCurrency(remainingBudgetAll);
-
-  // Provinces Allocation & Remaining Targets Ledger (condensed table, no budget column)
-  const officeOrder = Object.keys(CARAGA_PROVINCE_COORDINATES).filter(
-    (name) => officeAllocations[name],
-  );
-  const officeCount = officeOrder.length;
-  const baseShare =
-    officeCount > 0 ? Math.floor(globalTarget / officeCount) : 0;
-  const remainderShare = officeCount > 0 ? globalTarget % officeCount : 0;
-
-  const summaryTbody = document.getElementById('provincial-summary-tbody');
-  summaryTbody.innerHTML = '';
-
-  const chartLabels = [],
-    chartTargets = [],
-    chartAccomplished = [],
-    chartRemaining = [];
-
-  officeOrder.forEach((officeName, index) => {
-    const officeTarget = baseShare + (index < remainderShare ? 1 : 0);
-    const officeTrainings = db.filter((t) => t.province === officeName);
-    const completedCount = officeTrainings.filter(
-      (t) => t.status === 'completed',
-    ).length;
-    const remainingCount = Math.max(0, officeTarget - completedCount);
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-            <td class="py-2 font-semibold text-slate-800">${officeName}</td>
-            <td class="py-2 text-center font-bold text-slate-800">${officeTarget}</td>
-            <td class="py-2 text-center font-extrabold text-emerald-600">${completedCount}</td>
-            <td class="py-2 text-center font-semibold ${remainingCount > 0 ? 'text-amber-500' : 'text-slate-400'}">${remainingCount}</td>
-        `;
-    summaryTbody.appendChild(tr);
-
-    chartLabels.push(officeName);
-    chartTargets.push(officeTarget);
-    chartAccomplished.push(completedCount);
-    chartRemaining.push(remainingCount);
-  });
-
-  recalculateProvincialChart(
-    chartLabels,
-    chartTargets,
-    chartAccomplished,
-    chartRemaining,
-  );
 }
 
 // Reallocates and registers Central download row
 
 function handleDownloadSubmit(event) {
   event.preventDefault();
-  const id = document.getElementById('download-index').value;
+  const id = document.getElementById("download-index").value;
 
   let formData = new FormData();
-  formData.append('id', id);
-  formData.append('title', document.getElementById('dl-title').value);
+  formData.append("id", id);
+  formData.append("title", document.getElementById("dl-title").value);
   formData.append(
-    'target_trainings',
-    document.getElementById('dl-target').value,
+    "target_trainings",
+    document.getElementById("dl-target").value,
   );
   formData.append(
-    'unit_budget',
-    document.getElementById('dl-budget-per').value,
+    "unit_budget",
+    document.getElementById("dl-budget-per").value,
   );
-  formData.append('subaro_code', document.getElementById('dl-subaro').value);
-  formData.append('uacs_code', document.getElementById('dl-uacs').value);
-  formData.append('course_type', document.getElementById('dl-type').value);
+  formData.append("subaro_code", document.getElementById("dl-subaro").value);
+  formData.append("uacs_code", document.getElementById("dl-uacs").value);
+  formData.append("course_type", document.getElementById("dl-type").value);
   formData.append(
-    'duration_hours',
-    document.getElementById('dl-duration').value,
+    "duration_hours",
+    document.getElementById("dl-duration").value,
   );
   // The reference-document link field was dropped from this modal;
   // send an empty string so the (still NOT NULL) drive_link column
   // in pmt_downloads doesn't reject the insert.
-  formData.append('drive_link', '');
+  formData.append("drive_link", "");
 
-  fetch('api/downloads_save.php', {
-    method: 'POST',
+  fetch("api/downloads_save.php", {
+    method: "POST",
     body: formData,
   })
     .then((res) => res.json())
     .then((data) => {
-      if (data.status === 'success') {
+      if (data.status === "success") {
         closeDownloadModal();
         synchronizeDashboardState();
         Swal.fire(
-          'Download Registered',
-          'Central allocation saved to SQL server.',
-          'success',
+          "Download Registered",
+          "Central allocation saved to SQL server.",
+          "success",
         );
       }
     });
@@ -282,29 +169,29 @@ function handleDownloadSubmit(event) {
 
 function deleteDownload(id) {
   Swal.fire({
-    title: 'Wipe Download?',
-    text: 'Wipe this Central Download from persistence database?',
-    icon: 'warning',
+    title: "Wipe Download?",
+    text: "Wipe this Central Download from persistence database?",
+    icon: "warning",
     showCancelButton: true,
-    confirmButtonColor: '#EF4444',
-    cancelButtonColor: '#6B7280',
-    confirmButtonText: 'Yes, wipe allocation',
+    confirmButtonColor: "#EF4444",
+    cancelButtonColor: "#6B7280",
+    confirmButtonText: "Yes, wipe allocation",
   }).then((result) => {
     if (result.isConfirmed) {
       let formData = new FormData();
-      formData.append('id', id);
-      fetch('api/downloads_delete.php', {
-        method: 'POST',
+      formData.append("id", id);
+      fetch("api/downloads_delete.php", {
+        method: "POST",
         body: formData,
       })
         .then((res) => res.json())
         .then((data) => {
-          if (data.status === 'success') {
+          if (data.status === "success") {
             synchronizeDashboardState();
             Swal.fire(
-              'Removed!',
-              'Download allocation pruned from registry.',
-              'success',
+              "Removed!",
+              "Download allocation pruned from registry.",
+              "success",
             );
           }
         });
@@ -315,34 +202,34 @@ function deleteDownload(id) {
 // CRUD Form submission to persistent SQL via PDO
 
 function openDownloadModal(id) {
-  const form = document.getElementById('download-form');
+  const form = document.getElementById("download-form");
   form.reset();
-  document.getElementById('download-index').value = '';
+  document.getElementById("download-index").value = "";
 
   if (id) {
     const record = pmtDownloads.find((d) => d.id === id);
     if (!record) return;
 
-    document.getElementById('download-modal-title').innerText =
-      'Edit Central Office Download Document';
-    document.getElementById('download-index').value = record.id;
-    document.getElementById('dl-title').value = record.title;
-    document.getElementById('dl-type').value = record.course_type;
-    document.getElementById('dl-duration').value = record.duration_hours;
-    document.getElementById('dl-target').value = record.target_trainings;
-    document.getElementById('dl-budget-per').value = record.unit_budget;
-    document.getElementById('dl-subaro').value = record.subaro_code;
-    document.getElementById('dl-uacs').value = record.uacs_code;
+    document.getElementById("download-modal-title").innerText =
+      "Edit Central Office Download Document";
+    document.getElementById("download-index").value = record.id;
+    document.getElementById("dl-title").value = record.title;
+    document.getElementById("dl-type").value = record.course_type;
+    document.getElementById("dl-duration").value = record.duration_hours;
+    document.getElementById("dl-target").value = record.target_trainings;
+    document.getElementById("dl-budget-per").value = record.unit_budget;
+    document.getElementById("dl-subaro").value = record.subaro_code;
+    document.getElementById("dl-uacs").value = record.uacs_code;
   } else {
-    document.getElementById('download-modal-title').innerText =
-      'Register Central Office Download Document';
+    document.getElementById("download-modal-title").innerText =
+      "Register Central Office Download Document";
   }
 
-  document.getElementById('download-modal').classList.remove('hidden');
+  document.getElementById("download-modal").classList.remove("hidden");
 }
 
 function closeDownloadModal() {
-  document.getElementById('download-modal').classList.add('hidden');
+  document.getElementById("download-modal").classList.add("hidden");
 }
 
 //==================================================================
@@ -350,38 +237,38 @@ function closeDownloadModal() {
 //==================================================================
 
 const DEFAULT_OFFICE_ALLOCATIONS = {
-  'Regional Office': { target: 5, budget: 500000.0 },
-  'Butuan City': { target: 6, budget: 200000.0 },
-  'Agusan del Norte': { target: 5, budget: 150000.0 },
-  'Agusan del Sur': { target: 7, budget: 250000.0 },
-  'Surigao del Norte': { target: 6, budget: 200000.0 },
-  'Surigao del Sur': { target: 6, budget: 200000.0 },
-  'Dinagat Islands': { target: 5, budget: 150000.0 },
+  "Regional Office": { target: 5, budget: 500000.0 },
+  "Butuan City": { target: 6, budget: 200000.0 },
+  "Agusan del Norte": { target: 5, budget: 150000.0 },
+  "Agusan del Sur": { target: 7, budget: 250000.0 },
+  "Surigao del Norte": { target: 6, budget: 200000.0 },
+  "Surigao del Sur": { target: 6, budget: 200000.0 },
+  "Dinagat Islands": { target: 5, budget: 150000.0 },
 };
 
 function resetAllocationsToDefault() {
   Swal.fire({
-    title: 'Reset PMT Baselines?',
-    text: 'This restores the default training target and budget for every provincial office.',
-    icon: 'warning',
+    title: "Reset PMT Baselines?",
+    text: "This restores the default training target and budget for every provincial office.",
+    icon: "warning",
     showCancelButton: true,
-    confirmButtonColor: '#1E40AF',
-    cancelButtonColor: '#6B7280',
-    confirmButtonText: 'Yes, reset baselines',
+    confirmButtonColor: "#1E40AF",
+    cancelButtonColor: "#6B7280",
+    confirmButtonText: "Yes, reset baselines",
   }).then((result) => {
     if (!result.isConfirmed) return;
 
     const requests = [];
     Object.keys(DEFAULT_OFFICE_ALLOCATIONS).forEach((office) => {
       const defaults = DEFAULT_OFFICE_ALLOCATIONS[office];
-      ['target', 'budget'].forEach((field) => {
+      ["target", "budget"].forEach((field) => {
         const formData = new FormData();
-        formData.append('office_name', office);
-        formData.append('field', field);
-        formData.append('value', defaults[field]);
+        formData.append("office_name", office);
+        formData.append("field", field);
+        formData.append("value", defaults[field]);
         requests.push(
-          fetch('api/allocation_update.php', {
-            method: 'POST',
+          fetch("api/allocation_update.php", {
+            method: "POST",
             body: formData,
           }),
         );
@@ -391,9 +278,9 @@ function resetAllocationsToDefault() {
     Promise.all(requests).then(() => {
       synchronizeDashboardState();
       Swal.fire(
-        'Reset Complete',
-        'Provincial baselines restored to default PMT values.',
-        'success',
+        "Reset Complete",
+        "Provincial baselines restored to default PMT values.",
+        "success",
       );
     });
   });
@@ -404,14 +291,14 @@ function resetAllocationsToDefault() {
 //==================================================================
 
 function generateDownloadLedgerMatrix() {
-  const selectEl = document.getElementById('download-ledger-select');
+  const selectEl = document.getElementById("download-ledger-select");
   const downloadId = selectEl.value;
 
   if (!downloadId) {
     Swal.fire(
-      'Select a Download',
-      'Please choose a Reference Document Name first.',
-      'info',
+      "Select a Download",
+      "Please choose a Reference Document Name first.",
+      "info",
     );
     return;
   }
@@ -419,19 +306,28 @@ function generateDownloadLedgerMatrix() {
   const download = pmtDownloads.find((dl) => dl.id === downloadId);
   if (!download) {
     Swal.fire(
-      'Not Found',
-      'That registered download could not be found. Try refreshing the page.',
-      'error',
+      "Not Found",
+      "That registered download could not be found. Try refreshing the page.",
+      "error",
     );
     return;
   }
 
-  // Always check the database first for previously saved +/-
-  // assignments, so numbers survive a page refresh. Only fall back
-  // to an even split if nothing has been saved for this download yet.
+  // If this download's ledger is already loaded in memory (from an earlier
+  // Apply click, or from +/- edits you've already made), just re-render it
+  // instead of re-fetching. Re-fetching here was the bug: it could race
+  // against a save that hadn't finished landing yet, making Apply appear
+  // to wipe out targets you'd just set.
+  if (downloadLedgerState[downloadId]) {
+    renderDownloadLedgerTable(downloadId);
+    return;
+  }
+
+  // First time opening this download's ledger in this session -> load
+  // whatever's actually saved in the database.
   fetch(
     `api/download_ledger_get.php?download_id=${encodeURIComponent(downloadId)}`,
-    { cache: 'no-store' },
+    { cache: "no-store" },
   )
     .then((res) => res.json())
     .then((res) => {
@@ -439,7 +335,7 @@ function generateDownloadLedgerMatrix() {
       const officeOrder = Object.keys(CARAGA_PROVINCE_COORDINATES).filter(
         (name) => officeAllocations[name],
       );
-      const savedRows = res.status === 'success' ? res.assignments : [];
+      const savedRows = res.status === "success" ? res.assignments : [];
 
       if (savedRows.length > 0) {
         const buckets = {};
@@ -464,15 +360,13 @@ function generateDownloadLedgerMatrix() {
           buckets,
         };
       } else {
-        // Nothing saved yet for this download -> seed an even
-        // split locally (not persisted until the first edit)
         seedDownloadLedgerState(downloadId, download);
       }
 
       renderDownloadLedgerTable(downloadId);
     })
     .catch((err) => {
-      console.error('Failed to load saved ledger assignments:', err);
+      console.error("Failed to load saved ledger assignments:", err);
       seedDownloadLedgerState(downloadId, download);
       renderDownloadLedgerTable(downloadId);
     });
@@ -509,8 +403,27 @@ function adjustDownloadLedgerCell(downloadId, officeName, bucket, delta) {
   const state = downloadLedgerState[downloadId];
   if (!state) return;
   const current = state.buckets[officeName][bucket] || 0;
-  state.buckets[officeName][bucket] = Math.max(0, current + delta);
+  const updated = Math.max(0, current + delta);
+  state.buckets[officeName][bucket] = updated;
   renderDownloadLedgerTable(downloadId);
+
+  // Persist this single cell so it survives a page refresh
+  saveDownloadLedgerCell(downloadId, officeName, bucket, updated);
+}
+
+function saveDownloadLedgerCell(downloadId, officeName, bucket, count) {
+  let formData = new FormData();
+  formData.append("download_id", downloadId);
+  formData.append("office_name", officeName);
+  formData.append("duration_bucket", bucket);
+  formData.append("target_count", count);
+
+  fetch("api/download_ledger_save.php", {
+    method: "POST",
+    body: formData,
+  }).catch((err) => {
+    console.error("Failed to save ledger assignment:", err);
+  });
 }
 
 function resetDownloadLedgerAssignments(downloadId) {
@@ -518,10 +431,23 @@ function resetDownloadLedgerAssignments(downloadId) {
   if (!download) return;
   seedDownloadLedgerState(downloadId, download);
   renderDownloadLedgerTable(downloadId);
+
+  // Persist the reset (even split) values back to the database too
+  const state = downloadLedgerState[downloadId];
+  state.officeOrder.forEach((officeName) => {
+    state.durationBuckets.forEach((bucket) => {
+      saveDownloadLedgerCell(
+        downloadId,
+        officeName,
+        bucket,
+        state.buckets[officeName][bucket],
+      );
+    });
+  });
 }
 
 function renderDownloadLedgerTable(downloadId) {
-  const container = document.getElementById('download-ledger-container');
+  const container = document.getElementById("download-ledger-container");
   const state = downloadLedgerState[downloadId];
   const download = pmtDownloads.find((dl) => dl.id === downloadId);
   if (!state || !download) return;
@@ -536,7 +462,7 @@ function renderDownloadLedgerTable(downloadId) {
   });
   headerCells += `<th class="pb-2.5 text-right">Total Budget Allocation</th>`;
 
-  let bodyRows = '';
+  let bodyRows = "";
   let grandTotal = 0;
 
   officeOrder.forEach((officeName) => {
@@ -561,7 +487,7 @@ function renderDownloadLedgerTable(downloadId) {
                         </td>
                     `;
       })
-      .join('');
+      .join("");
 
     bodyRows += `
                     <tr class="hover:bg-slate-50 transition-colors">
@@ -581,7 +507,7 @@ function renderDownloadLedgerTable(downloadId) {
   bodyRows += `
                 <tr class="bg-slate-50 font-extrabold text-slate-800">
                     <td class="py-3">Grand Total</td>
-                    <td colspan="${durationBuckets.length}" class="py-3 text-center ${isBalanced ? 'text-emerald-600' : 'text-amber-600'}">
+                    <td colspan="${durationBuckets.length}" class="py-3 text-center ${isBalanced ? "text-emerald-600" : "text-amber-600"}">
                         ${grandTotal} of ${downloadTarget} Target Trainings Assigned
                     </td>
                     <td class="py-3 text-right whitespace-nowrap">${formatCurrency(grandTotal * unitBudget)}</td>
@@ -615,5 +541,5 @@ function renderDownloadLedgerTable(downloadId) {
                     </div>
                 </div>
             `;
-  container.classList.remove('hidden');
+  container.classList.remove("hidden");
 }

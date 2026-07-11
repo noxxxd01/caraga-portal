@@ -70,6 +70,7 @@
                             <tr>
                                 <th class="p-4">Training Identification / Title</th>
                                 <th class="p-4">Type</th>
+                                <th class="p-4">Province</th>
                                 <th class="p-4">Assigned Location</th>
                                 <th class="p-4">Sex Desegregation (M/F)</th>
                                 <th class="p-4 text-right">Costs & Savings</th>

@@ -8,6 +8,8 @@ function recalculateFinancialBarChart(
   remainingBudget,
   budgetUtilizedRate,
 ) {
+  if (!barChartInstance) return;
+
   const officesList = Object.keys(officeAllocations);
   const allocatedData = [];
   const utilizedData = [];
@@ -27,68 +29,41 @@ function recalculateFinancialBarChart(
   barChartInstance.data.datasets[1].data = utilizedData;
   barChartInstance.update();
 
-  document.getElementById('fin-allocated-val').innerText =
-    formatCurrency(totalAllocated);
-  document.getElementById('fin-utilized-val').innerText =
-    formatCurrency(totalUtilized);
-  document.getElementById('fin-remaining-val').innerText =
-    formatCurrency(remainingBudget);
+  const finAllocatedEl = document.getElementById("fin-allocated-val");
+  const finUtilizedEl = document.getElementById("fin-utilized-val");
+  const finRemainingEl = document.getElementById("fin-remaining-val");
+  const finPctEl = document.getElementById("fin-utilized-pct-val");
+  const finUtilBar = document.getElementById("fin-utilized-progress-bar");
 
-  document.getElementById('fin-utilized-pct-val').innerText =
-    budgetUtilizedRate + '%';
-  const finUtilBar = document.getElementById('fin-utilized-progress-bar');
-  if (finUtilBar) {
-    finUtilBar.style.width = Math.min(100, budgetUtilizedRate) + '%';
-  }
+  if (finAllocatedEl) finAllocatedEl.innerText = formatCurrency(totalAllocated);
+  if (finUtilizedEl) finUtilizedEl.innerText = formatCurrency(totalUtilized);
+  if (finRemainingEl)
+    finRemainingEl.innerText = formatCurrency(remainingBudget);
+  if (finPctEl) finPctEl.innerText = budgetUtilizedRate + "%";
+  if (finUtilBar)
+    finUtilBar.style.width = Math.min(100, budgetUtilizedRate) + "%";
 }
 
 // REST API simulator
 
 function initializeCharts() {
-  const doughnutCtx = document
-    .getElementById('accomplishmentDoughnutChart')
-    .getContext('2d');
-  doughnutChartInstance = new Chart(doughnutCtx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Accomplished', 'Remaining'],
-      datasets: [
-        {
-          data: [0, 100],
-          backgroundColor: ['#10B981', '#E2E8F0'],
-          borderWidth: 0,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '72%',
-      plugins: {
-        legend: { display: false },
-        tooltip: { enabled: false },
-      },
-    },
-  });
-
-  const barCtx = document
-    .getElementById('financialVarianceChart')
-    .getContext('2d');
-  barChartInstance = new Chart(barCtx, {
-    type: 'bar',
+  const barCtx = document.getElementById("financialVarianceChart");
+  if (!barCtx) return;
+  barChartInstance = new Chart(barCtx.getContext("2d"), {
+    type: "bar",
     data: {
       labels: [],
       datasets: [
         {
-          label: 'Allocated',
+          label: "Allocated",
           data: [],
-          backgroundColor: '#1E40AF',
+          backgroundColor: "#1E40AF",
           borderRadius: 6,
         },
         {
-          label: 'Utilized',
+          label: "Utilized",
           data: [],
-          backgroundColor: '#8B5CF6',
+          backgroundColor: "#8B5CF6",
           borderRadius: 6,
         },
       ],
@@ -98,7 +73,7 @@ function initializeCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: 'top',
+          position: "top",
           labels: { boxWidth: 10, font: { size: 10 } },
         },
       },
@@ -109,7 +84,7 @@ function initializeCharts() {
           ticks: {
             font: { size: 9 },
             callback: function (value) {
-              return '₱' + value.toLocaleString();
+              return "₱" + value.toLocaleString();
             },
           },
         },
@@ -119,29 +94,29 @@ function initializeCharts() {
 }
 
 function initializeProvincialChart() {
-  const ctx = document.getElementById('provincialOfficeChart');
+  const ctx = document.getElementById("provincialOfficeChart");
   if (!ctx) return;
   provincialChartInstance = new Chart(ctx, {
-    type: 'bar',
+    type: "bar",
     data: {
       labels: [],
       datasets: [
         {
-          label: 'Target',
+          label: "Target",
           data: [],
-          backgroundColor: '#3B82F6',
+          backgroundColor: "#3B82F6",
           borderRadius: 4,
         },
         {
-          label: 'Accomplished',
+          label: "Accomplished",
           data: [],
-          backgroundColor: '#10B981',
+          backgroundColor: "#10B981",
           borderRadius: 4,
         },
         {
-          label: 'Remaining',
+          label: "Remaining",
           data: [],
-          backgroundColor: '#F59E0B',
+          backgroundColor: "#F59E0B",
           borderRadius: 4,
         },
       ],
@@ -151,7 +126,7 @@ function initializeProvincialChart() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: 'top',
+          position: "top",
           labels: { font: { size: 10 }, boxWidth: 10 },
         },
       },
@@ -173,23 +148,23 @@ function recalculateProvincialChart(labels, targets, accomplished, remaining) {
 }
 
 function initializeParticipantsChart() {
-  const ctx = document.getElementById('participantsProvinceChart');
+  const ctx = document.getElementById("participantsProvinceChart");
   if (!ctx) return;
   participantsChartInstance = new Chart(ctx, {
-    type: 'bar',
+    type: "bar",
     data: {
       labels: [],
       datasets: [
         {
-          label: 'Male',
+          label: "Male",
           data: [],
-          backgroundColor: '#3B82F6',
+          backgroundColor: "#3B82F6",
           borderRadius: 4,
         },
         {
-          label: 'Female',
+          label: "Female",
           data: [],
-          backgroundColor: '#EC4899',
+          backgroundColor: "#EC4899",
           borderRadius: 4,
         },
       ],
@@ -199,7 +174,7 @@ function initializeParticipantsChart() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: 'top',
+          position: "top",
           labels: { font: { size: 10 }, boxWidth: 10 },
         },
       },

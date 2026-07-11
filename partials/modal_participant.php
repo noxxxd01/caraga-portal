@@ -75,7 +75,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Province (auto-resolved, or set manually if no Training ID)</label>
-                        <select id="participant-province" class="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-dict-bright focus:outline-none">
+                        <select id="participant-province" onchange="onParticipantProvinceSelectChange()" class="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-dict-bright focus:outline-none">
                             <option value="">— Not set —</option>
                             <option value="Regional Office">Regional Office</option>
                             <option value="Butuan City">Butuan City</option>
@@ -84,7 +84,9 @@
                             <option value="Surigao del Norte">Surigao del Norte</option>
                             <option value="Surigao del Sur">Surigao del Sur</option>
                             <option value="Dinagat Islands">Dinagat Islands</option>
+                            <option value="__OTHER__">Other / Outside Caraga Region (specify)</option>
                         </select>
+                        <input type="text" id="participant-province-other" placeholder="e.g., Davao del Norte, NCR, Zamboanga City" class="hidden w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-dict-bright focus:outline-none mt-2">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Municipality</label>

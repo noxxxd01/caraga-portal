@@ -64,9 +64,6 @@
                 </div>
             </section>
 
-            <!-- SECTION 2: EXECUTIVE PERFORMANCE CARD GRID -->
-            <section class="flex flex-col gap-4">
-
             <!-- SECTION 3: OPERATIONAL CATEGORIES, PROVINCIAL LEDGER & FINANCIAL SUMMARY -->
             <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 

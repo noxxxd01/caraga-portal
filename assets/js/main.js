@@ -3,9 +3,10 @@
  * Must load last, after every module above has defined its functions.
  */
 
-window.addEventListener('load', function () {
+window.addEventListener("load", function () {
   initializeGISMap();
   initializeCharts();
+  initializeProvincialChart();
   initializeParticipantsChart();
   synchronizeDashboardState();
   fetchParticipants();
