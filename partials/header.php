@@ -56,6 +56,9 @@
                 <button onclick="setActiveTab('pmt-downloads')" id="nav-btn-pmt-downloads" class="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/50 transition-all">
                     <i class="fa-solid fa-cloud-arrow-down mr-1 text-amber-400"></i> PMT Downloads Registry
                 </button>
+                <button onclick="setActiveTab('settings')" id="nav-btn-settings" class="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all">
+                    <i class="fa-solid fa-gear mr-1"></i> Settings
+                </button>
             </div>
         </div>
     </header>

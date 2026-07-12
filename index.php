@@ -35,6 +35,7 @@ if (empty($_SESSION['csrf_token'])) {
 <?php include __DIR__ . '/partials/tab_financial.php'; ?>
 <?php include __DIR__ . '/partials/tab_api_explorer.php'; ?>
 <?php include __DIR__ . '/partials/tab_downloads.php'; ?>
+<?php include __DIR__ . '/partials/tab_settings.php'; ?>
 
     </main>
 
@@ -52,6 +53,7 @@ if (empty($_SESSION['csrf_token'])) {
     <script src="assets/js/participants.js"></script>
     <script src="assets/js/ui.js"></script>
     <script src="assets/js/main.js"></script>
+    <script src="assets/js/settings.js"></script>
     <script src="assets/js/dashboard.js?v=<?php echo filemtime(__DIR__ . '/assets/js/dashboard.js'); ?>"></script>
     <script src="assets/js/tracker.js?v=<?php echo filemtime(__DIR__ . '/assets/js/tracker.js'); ?>"></script>
 </body>
