@@ -4,5 +4,6 @@ try {
     $rows = $db->query("SELECT * FROM `participants` ORDER BY `training_date` DESC")->fetchAll();
     echo json_encode(['status' => 'success', 'participants' => $rows]);
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log($e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'A database error occurred. Please try again.']);
 }

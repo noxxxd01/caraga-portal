@@ -40,11 +40,13 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Training ID (links to Training Tracker record)</label>
-                    <input type="text" id="participant-training-id" placeholder="e.g., tr-101" onchange="onParticipantTrainingIdChange()" class="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-dict-bright focus:outline-none">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Training Identification / Title (links to Training Tracker record)</label>
+                    <select id="participant-training-id" onchange="onParticipantTrainingIdChange()" class="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-dict-bright focus:outline-none">
+                        <option value="">— Not linked to a specific training —</option>
+                    </select>
                     <p id="participant-training-match" class="text-[10px] text-slate-400 mt-1"></p>
                 </div>
-
+                
                 <div>
                     <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Training Title</label>
                     <input type="text" id="participant-training-title" placeholder="e.g., ISMS Compliance Auditing" class="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-dict-bright focus:outline-none">

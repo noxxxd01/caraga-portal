@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DICT Caraga - PMT Training Monitoring & Analytics Web Portal</title>
+
+    <script>const CSRF_TOKEN = "<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>";</script>
     
     <!-- Tailwind CSS & FontAwesome Icons -->
     <script src="https://cdn.tailwindcss.com"></script>

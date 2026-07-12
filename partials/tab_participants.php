@@ -21,7 +21,7 @@
                             <input type="file" id="csv-file-input" accept=".csv" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" onchange="handleCSVUpload(event)">
                             <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-3 block"></i>
                             <span class="text-xs font-bold text-slate-700 block">Click or Drag & Drop csv files here</span>
-                            <span class="text-[10px] text-slate-400 mt-1 block">Expected Headings: Participant Name, Project, Program, Training Title, Training Date, Training ID, CertID, Certificate Type, Resource Person, Sex</span>
+                            <span class="text-[10px] text-slate-400 mt-1 block">Expected Headings: Participant Name, Project, Program, Training Title, Training Date, Training ID, CertID, Certificate Type, Resource Person, Sex, Province, Municipality. Max 2,000 rows per upload.</span>
                         </div>
 
                         <div class="flex gap-2 mt-4">

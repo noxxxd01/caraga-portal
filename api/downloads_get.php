@@ -8,7 +8,8 @@ require_once __DIR__ . '/_bootstrap.php';
                 $downloads = $db->query("SELECT * FROM `pmt_downloads` ORDER BY `id` DESC")->fetchAll();
                 echo json_encode(['status' => 'success', 'downloads' => $downloads]);
             } catch (PDOException $e) {
-                echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+                error_log($e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'A database error occurred. Please try again.']);
             }
             exit;
 

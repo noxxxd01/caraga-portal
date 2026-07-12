@@ -29,16 +29,16 @@ function populateTrackerTable(dataList) {
       "hover:bg-slate-50 border-b border-slate-100 transition-all";
     row.innerHTML = `
             <td class="p-4">
-                <span class="text-slate-400 font-mono block text-[10px]">${t.course_code}</span>
-                <span class="font-extrabold text-slate-900 block">${t.training_title}</span>
+                <span class="text-slate-400 font-mono block text-[10px]">${escapeHtml(t.course_code)}</span>
+                <span class="font-extrabold text-slate-900 block">${escapeHtml(t.training_title)}</span>
             </td>
             <td class="p-4 font-semibold text-slate-700">${t.course_type || "Webinar"} (${t.duration_hours || 3}h)</td>
-            <td class="p-4 text-slate-700 font-bold">${t.province}</td>
-            <td class="p-4 text-slate-600 font-medium"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>${t.venue}, ${t.province}</td>
+            <td class="p-4 text-slate-700 font-bold">${escapeHtml(t.province)}</td>
+            <td class="p-4 text-slate-600 font-medium"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>${escapeHtml(t.venue)}, ${escapeHtml(t.province)}</td>
             <td class="p-4">
                 <div class="flex items-center gap-2">
                     <span class="font-bold text-slate-900">${totalParticipants} Total</span>
-                    <span class="text-[10px] text-slate-400 font-bold">(♂ ${t.male_participants || 0} | ♀ ${t.female_participants || 0})</span>
+                    <span class="text-[10px] text-slate-400 font-bold">(♂ ${escapeHtml(t.male_participants || 0)} | ♀ ${escapeHtml(t.female_participants || 0)})</span>
                 </div>
             </td>
             <td class="p-4 text-right">
@@ -46,10 +46,10 @@ function populateTrackerTable(dataList) {
                 <span class="block text-[10px] text-emerald-600 font-bold">Saved: ${formatCurrency(budgetSaved)}</span>
             </td>
             <td class="p-4">
-                <span class="px-2 py-0.5 rounded-full font-bold text-[10px] tracking-wide uppercase text-white" style="background-color: ${color}">${t.status}</span>
+                <span class="px-2 py-0.5 rounded-full font-bold text-[10px] tracking-wide uppercase text-white" style="background-color: ${color}">${escapeHtml(t.status)}</span>
             </td>
             <td class="p-4 text-center">
-                ${t.drive_link ? `<a href="${t.drive_link}" target="_blank" class="text-dict-bright hover:underline font-bold"><i class="fa-solid fa-folder-open mr-1"></i>Drive Link</a>` : `<span class="text-slate-300 italic">None</span>`}
+                ${t.drive_link ? `<a href="${escapeHtml(t.drive_link)}" target="_blank" class="text-dict-bright hover:underline font-bold"><i class="fa-solid fa-folder-open mr-1"></i>Drive Link</a>` : `<span class="text-slate-300 italic">None</span>`}
             </td>
             <td class="p-4 text-center">
                 <div class="flex items-center justify-center gap-2">
@@ -82,6 +82,7 @@ function handleFormSubmission(event) {
   }
 
   let formData = new FormData();
+  formData.append("csrf_token", CSRF_TOKEN);
   formData.append("id", id);
   formData.append(
     "training_title",
@@ -320,6 +321,7 @@ function deleteRecord(id) {
   }).then((result) => {
     if (result.isConfirmed) {
       let formData = new FormData();
+      formData.append("csrf_token", CSRF_TOKEN);
       formData.append("id", id);
       fetch("api/training_delete.php", {
         method: "POST",

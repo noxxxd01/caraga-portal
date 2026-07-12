@@ -17,7 +17,8 @@ require_once __DIR__ . '/_bootstrap.php';
                     'trainings' => $trainings
                 ]);
             } catch (PDOException $e) {
-                echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+                error_log($e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'A database error occurred. Please try again.']);
             }
             exit;
 

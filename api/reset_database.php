@@ -12,6 +12,7 @@ require_once __DIR__ . '/_bootstrap.php';
                 // Re-trigger seeding script via simple self-redirection
                 header("Location: " . $_SERVER['PHP_SELF']);
             } catch (PDOException $e) {
-                echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+                error_log($e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'A database error occurred. Please try again.']);
             }
             exit;

@@ -38,11 +38,12 @@ function updateParticipantsSummary() {
     ),
   ].sort();
 
-  // Chart: the 7 Caraga provinces get their own bar each; everything
-  // outside Caraga is aggregated into one combined "Other" bar so the
-  // chart stays readable no matter how many distinct outside provinces
-  // get entered over time.
+  const hasUnresolved = participantsData.some(
+    (p) => !p.province || p.province.trim() === "",
+  );
+
   const chartLabels = [...caragaProvinces, "Other"];
+  if (hasUnresolved) chartLabels.push("Unresolved / No Province");
 
   const maleByProvince = caragaProvinces.map(
     (name) =>
@@ -61,14 +62,22 @@ function updateParticipantsSummary() {
   const otherFemaleCount = participantsData.filter(
     (p) => outsideProvinces.includes(p.province) && p.sex === "Female",
   ).length;
-
   maleByProvince.push(otherMaleCount);
   femaleByProvince.push(otherFemaleCount);
 
+  if (hasUnresolved) {
+    const unresolvedMale = participantsData.filter(
+      (p) => (!p.province || p.province.trim() === "") && p.sex === "Male",
+    ).length;
+    const unresolvedFemale = participantsData.filter(
+      (p) => (!p.province || p.province.trim() === "") && p.sex === "Female",
+    ).length;
+    maleByProvince.push(unresolvedMale);
+    femaleByProvince.push(unresolvedFemale);
+  }
+
   recalcParticipantsChart(chartLabels, maleByProvince, femaleByProvince);
 
-  // Ledger filter dropdown still lists each outside province individually,
-  // so you can still filter down to a specific one if needed
   refreshParticipantsProvinceFilterOptions(caragaProvinces, outsideProvinces);
 }
 
@@ -112,6 +121,8 @@ function downloadCSVTemplate() {
     "Certificate Type",
     "Resource Person",
     "Sex",
+    "Province",
+    "Municipality",
   ];
   const sampleRow = [
     "Juan Dela Cruz",
@@ -124,11 +135,15 @@ function downloadCSVTemplate() {
     "Certificate of Completion",
     "Engr. Ricardo Salvador",
     "Male",
+    "Regional Office",
+    "Butuan City",
   ];
+
   const escapeCsv = (val) => `"${String(val).replace(/"/g, '""')}"`;
   const csvContent = [headers, sampleRow]
     .map((row) => row.map(escapeCsv).join(","))
     .join("\r\n");
+
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -138,15 +153,33 @@ function downloadCSVTemplate() {
   document.body.removeChild(link);
 }
 
+const CSV_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const CSV_MAX_ROWS = 2000;
+
 function handleCSVUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
+
+  if (file.size > CSV_MAX_FILE_SIZE_BYTES) {
+    event.target.value = "";
+    Swal.fire("File Too Large", "CSV files must be under 5 MB.", "warning");
+    return;
+  }
 
   Papa.parse(file, {
     header: true,
     skipEmptyLines: true,
     complete: function (results) {
       const rows = results.data;
+      if (rows.length > CSV_MAX_ROWS) {
+        event.target.value = "";
+        Swal.fire(
+          "Too Many Rows",
+          `This CSV has ${rows.length} rows. Please split it into batches of ${CSV_MAX_ROWS} or fewer.`,
+          "warning",
+        );
+        return;
+      }
       if (!rows || rows.length === 0) {
         Swal.fire("Empty File", "No rows were found in that CSV.", "warning");
         event.target.value = "";
@@ -154,6 +187,7 @@ function handleCSVUpload(event) {
       }
       fetch("api/participants_bulk_import.php", {
         method: "POST",
+        headers: { "X-CSRF-Token": CSRF_TOKEN },
         body: JSON.stringify(rows),
       })
         .then((res) => res.json())
@@ -195,15 +229,44 @@ function handleCSVUpload(event) {
   });
 }
 
+// Builds the Training Identification dropdown from the live Training Tracker
+// dataset (the global `db` array). If the participant currently being edited
+// has a training_id that no longer exists in the Tracker (e.g. deleted since),
+// it's still included as a labeled "orphaned" option so the value isn't lost.
+function populateParticipantTrainingSelect(currentTrainingId) {
+  const select = document.getElementById("participant-training-id");
+  if (!select) return;
+
+  const trainings = (db || [])
+    .slice()
+    .sort((a, b) => a.training_title.localeCompare(b.training_title));
+
+  let optionsHtml =
+    '<option value="">— Not linked to a specific training —</option>';
+  trainings.forEach((t) => {
+    optionsHtml += `<option value="${t.id}">${escapeHtml(t.training_title)} — ${escapeHtml(t.province)} (${t.id})</option>`;
+  });
+
+  const matchExists = trainings.some((t) => t.id === currentTrainingId);
+  if (currentTrainingId && !matchExists) {
+    optionsHtml += `<option value="${currentTrainingId}">⚠ Orphaned reference: ${currentTrainingId} (no longer in Tracker)</option>`;
+  }
+
+  select.innerHTML = optionsHtml;
+  select.value = currentTrainingId || "";
+}
+
 function openParticipantModal(id) {
   const form = document.getElementById("participant-form");
   form.reset();
   document.getElementById("participant-id").value = "";
   document.getElementById("participant-training-match").innerText = "";
+  populateParticipantTrainingSelect("");
 
   if (id) {
     const record = participantsData.find((p) => p.id === id);
     if (!record) return;
+
     document.getElementById("participant-modal-title").innerText =
       "Edit Registrant";
     document.getElementById("participant-id").value = record.id;
@@ -211,8 +274,7 @@ function openParticipantModal(id) {
     document.getElementById("participant-sex").value = record.sex;
     document.getElementById("participant-project").value = record.project || "";
     document.getElementById("participant-program").value = record.program || "";
-    document.getElementById("participant-training-id").value =
-      record.training_id || "";
+    populateParticipantTrainingSelect(record.training_id || "");
     document.getElementById("participant-training-title").value =
       record.training_title || "";
     document.getElementById("participant-training-date").value =
@@ -222,16 +284,8 @@ function openParticipantModal(id) {
     document.getElementById("participant-cert-id").value = record.cert_id || "";
     document.getElementById("participant-cert-type").value =
       record.certificate_type || "";
-    const knownProvinces = Object.keys(CARAGA_PROVINCE_COORDINATES);
-    if (record.province && !knownProvinces.includes(record.province)) {
-      document.getElementById("participant-province").value = "__OTHER__";
-      document.getElementById("participant-province-other").value =
-        record.province;
-    } else {
-      document.getElementById("participant-province").value =
-        record.province || "";
-    }
-    onParticipantProvinceSelectChange();
+    document.getElementById("participant-province").value =
+      record.province || "";
     document.getElementById("participant-municipality").value =
       record.municipality || "";
   } else {
@@ -286,6 +340,7 @@ function onParticipantTrainingIdChange() {
 function handleParticipantSubmit(event) {
   event.preventDefault();
   let formData = new FormData();
+  formData.append("csrf_token", CSRF_TOKEN);
   formData.append("id", document.getElementById("participant-id").value);
   formData.append(
     "participant_name",
@@ -381,6 +436,7 @@ function deleteParticipant(id) {
   }).then((result) => {
     if (result.isConfirmed) {
       let formData = new FormData();
+      formData.append("csrf_token", CSRF_TOKEN);
       formData.append("id", id);
       fetch("api/participants_delete.php", { method: "POST", body: formData })
         .then((res) => res.json())
@@ -436,33 +492,33 @@ function renderParticipantsLedgerTable() {
     const tr = document.createElement("tr");
     tr.className = "hover:bg-slate-50 transition-colors";
     tr.innerHTML = `
-            <td class="p-4 font-bold text-slate-900">${p.participant_name}</td>
-            <td class="p-4 text-slate-600">${p.project || "—"}</td>
-            <td class="p-4 text-slate-600">${p.program || "—"}</td>
-            <td class="p-4 text-slate-600">${p.training_title || "—"}</td>
-            <td class="p-4 text-slate-600 whitespace-nowrap">${p.training_date || "—"}</td>
-            <td class="p-4 font-mono text-slate-500">${p.training_id || "—"}</td>
-            <td class="p-4 font-mono text-purple-600">${p.cert_id || "—"}</td>
-            <td class="p-4 text-slate-600">${p.certificate_type || "—"}</td>
-            <td class="p-4 text-slate-600">${p.resource_person || "—"}</td>
-            <td class="p-4 text-slate-700 font-semibold">${p.province || "—"}</td>
-            <td class="p-4 text-slate-600">${p.municipality || "—"}</td>
-            <td class="p-4">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${p.sex === "Female" ? "bg-pink-50 text-pink-700" : "bg-blue-50 text-blue-700"}">
-                    <i class="fa-solid ${p.sex === "Female" ? "fa-venus" : "fa-mars"}"></i> ${p.sex || "—"}
-                </span>
-            </td>
-            <td class="p-4 text-center whitespace-nowrap">
-                <div class="flex items-center justify-center gap-1.5">
-                    <button onclick="openParticipantModal('${p.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg" title="Edit">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <button onclick="deleteParticipant('${p.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg" title="Delete">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </div>
-            </td>
-        `;
+          <td class="p-4 font-bold text-slate-900">${escapeHtml(p.participant_name)}</td>
+          <td class="p-4 text-slate-600">${escapeHtml(p.project || "—")}</td>
+          <td class="p-4 text-slate-600">${escapeHtml(p.program || "—")}</td>
+          <td class="p-4 text-slate-600">${escapeHtml(p.training_title || "—")}</td>
+          <td class="p-4 text-slate-600 whitespace-nowrap">${escapeHtml(p.training_date || "—")}</td>
+          <td class="p-4 font-mono text-slate-500">${escapeHtml(p.training_id || "—")}</td>
+          <td class="p-4 font-mono text-purple-600">${escapeHtml(p.cert_id || "—")}</td>
+          <td class="p-4 text-slate-600">${escapeHtml(p.certificate_type || "—")}</td>
+          <td class="p-4 text-slate-600">${escapeHtml(p.resource_person || "—")}</td>
+          <td class="p-4 text-slate-700 font-semibold">${escapeHtml(p.province || "—")}</td>
+          <td class="p-4 text-slate-600">${escapeHtml(p.municipality || "—")}</td>
+          <td class="p-4">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${p.sex === "Female" ? "bg-pink-50 text-pink-700" : "bg-blue-50 text-blue-700"}">
+                  <i class="fa-solid ${p.sex === "Female" ? "fa-venus" : "fa-mars"}"></i> ${escapeHtml(p.sex || "—")}
+              </span>
+          </td>
+          <td class="p-4 text-center whitespace-nowrap">
+              <div class="flex items-center justify-center gap-1.5">
+                  <button onclick="openParticipantModal('${p.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg" title="Edit">
+                      <i class="fa-solid fa-pen-to-square"></i>
+                  </button>
+                  <button onclick="deleteParticipant('${p.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg" title="Delete">
+                      <i class="fa-solid fa-trash-can"></i>
+                  </button>
+              </div>
+          </td>
+      `;
     tbody.appendChild(tr);
   });
 }

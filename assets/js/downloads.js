@@ -53,27 +53,27 @@ function rebuildDownloadsRegistry() {
           const tr = document.createElement("tr");
           tr.className = "hover:bg-slate-50 transition-colors";
           tr.innerHTML = `
-                                <td class="p-3 align-top font-bold text-slate-900">${dl.title}</td>
-                                <td class="p-3 align-top">
-                                    <span class="bg-blue-50 text-blue-800 font-extrabold px-2 py-0.5 rounded text-[10px]">${dl.course_type || "Mixed Allocations"}</span>
-                                </td>
-                                <td class="p-3 align-top font-medium text-slate-600">${dl.duration_hours || "Full Catalog"}</td>
-                                <td class="p-3 align-top text-center font-extrabold text-blue-600">${dl.target_trainings}</td>
-                                <td class="p-3 align-top text-right font-semibold">${formatCurrency(dl.unit_budget)}</td>
-                                <td class="p-3 align-top text-right font-black text-slate-800">${formatCurrency(rowTotalBudget)}</td>
-                                <td class="p-3 align-top font-mono font-bold text-purple-600">${dl.subaro_code}</td>
-                                <td class="p-3 align-top font-mono font-bold text-slate-500">${dl.uacs_code || "5020201000"}</td>
-                                <td class="p-3 align-top text-center whitespace-nowrap">
-                                    <div class="flex items-center justify-center gap-1.5">
-                                        <button onclick="openDownloadModal('${dl.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded" title="Edit Properties">
-                                            <i class="fa-solid fa-edit"></i>
-                                        </button>
-                                        <button onclick="deleteDownload('${dl.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded" title="Wipe Registry">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            `;
+                <td class="p-3 align-top font-bold text-slate-900">${escapeHtml(dl.title)}</td>
+                <td class="p-3 align-top">
+                    <span class="bg-blue-50 text-blue-800 font-extrabold px-2 py-0.5 rounded text-[10px]">${escapeHtml(dl.course_type || "Mixed Allocations")}</span>
+                </td>
+                <td class="p-3 align-top font-medium text-slate-600">${escapeHtml(dl.duration_hours || "Full Catalog")}</td>
+                <td class="p-3 align-top text-center font-extrabold text-blue-600">${dl.target_trainings}</td>
+                <td class="p-3 align-top text-right font-semibold">${formatCurrency(dl.unit_budget)}</td>
+                <td class="p-3 align-top text-right font-black text-slate-800">${formatCurrency(rowTotalBudget)}</td>
+                <td class="p-3 align-top font-mono font-bold text-purple-600">${escapeHtml(dl.subaro_code)}</td>
+                <td class="p-3 align-top font-mono font-bold text-slate-500">${escapeHtml(dl.uacs_code || "5020201000")}</td>
+                <td class="p-3 align-top text-center whitespace-nowrap">
+                    <div class="flex items-center justify-center gap-1.5">
+                        <button onclick="openDownloadModal('${dl.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded" title="Edit Properties">
+                            <i class="fa-solid fa-edit"></i>
+                        </button>
+                        <button onclick="deleteDownload('${dl.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded" title="Wipe Registry">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
           tableBody.appendChild(tr);
         });
 
@@ -125,6 +125,7 @@ function handleDownloadSubmit(event) {
   const id = document.getElementById("download-index").value;
 
   let formData = new FormData();
+  formData.append("csrf_token", CSRF_TOKEN);
   formData.append("id", id);
   formData.append("title", document.getElementById("dl-title").value);
   formData.append(
@@ -142,9 +143,6 @@ function handleDownloadSubmit(event) {
     "duration_hours",
     document.getElementById("dl-duration").value,
   );
-  // The reference-document link field was dropped from this modal;
-  // send an empty string so the (still NOT NULL) drive_link column
-  // in pmt_downloads doesn't reject the insert.
   formData.append("drive_link", "");
 
   fetch("api/downloads_save.php", {
@@ -161,7 +159,17 @@ function handleDownloadSubmit(event) {
           "Central allocation saved to SQL server.",
           "success",
         );
+      } else {
+        Swal.fire(
+          "Save Failed",
+          data.message || "An error occurred while saving.",
+          "error",
+        );
       }
+    })
+    .catch((err) => {
+      console.error("Save download error:", err);
+      Swal.fire("Save Failed", "Could not reach the server.", "error");
     });
 }
 
@@ -179,6 +187,7 @@ function deleteDownload(id) {
   }).then((result) => {
     if (result.isConfirmed) {
       let formData = new FormData();
+      formData.append("csrf_token", CSRF_TOKEN);
       formData.append("id", id);
       fetch("api/downloads_delete.php", {
         method: "POST",
@@ -263,6 +272,7 @@ function resetAllocationsToDefault() {
       const defaults = DEFAULT_OFFICE_ALLOCATIONS[office];
       ["target", "budget"].forEach((field) => {
         const formData = new FormData();
+        formData.append("csrf_token", CSRF_TOKEN);
         formData.append("office_name", office);
         formData.append("field", field);
         formData.append("value", defaults[field]);
@@ -413,6 +423,7 @@ function adjustDownloadLedgerCell(downloadId, officeName, bucket, delta) {
 
 function saveDownloadLedgerCell(downloadId, officeName, bucket, count) {
   let formData = new FormData();
+  formData.append("csrf_token", CSRF_TOKEN);
   formData.append("download_id", downloadId);
   formData.append("office_name", officeName);
   formData.append("duration_bucket", bucket);
@@ -519,7 +530,7 @@ function renderDownloadLedgerTable(downloadId) {
                     <div class="border-b border-slate-100 pb-3 mb-4 flex items-center justify-between flex-wrap gap-2">
                         <div>
                             <h3 class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-                                <i class="fa-solid fa-table-list text-amber-500"></i> Provincial Performance Ledger Matrix — ${download.title}
+                                <i class="fa-solid fa-table-list text-amber-500"></i> Provincial Performance Ledger Matrix — ${escapeHtml(download.title)}
                             </h3>
                             <p class="text-xs text-slate-500">Use the + / − controls to manually assign how many trainings each province runs at each duration.</p>
                         </div>

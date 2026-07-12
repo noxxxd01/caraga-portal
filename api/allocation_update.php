@@ -14,7 +14,8 @@ require_once __DIR__ . '/_bootstrap.php';
                 $stmt->execute([$_POST['value'], $_POST['office_name']]);
                 echo json_encode(['status' => 'success']);
             } catch (Exception $e) {
-                echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+                error_log($e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'A database error occurred. Please try again.']);
             }
             exit;
 

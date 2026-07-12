@@ -23,15 +23,21 @@
 
             <!-- Global Target Control Center (Auto-calculated from SQL Provincial Target sum) -->
             <div class="flex items-center bg-slate-900/60 rounded-xl px-4 py-2 border border-slate-800 gap-4">
-                <div class="text-right">
-                    <span class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold block">Total Consolidated Target</span>
-                    <span class="text-xs text-slate-300">Sum of All PMT Allocations</span>
-                </div>
                 <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-700">
                     <span id="annual-target-display" class="text-sm font-black text-white">0</span>
                     <span class="text-[10px] text-slate-400">Trainings</span>
                 </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-[10px] text-slate-400">
+                        Signed in as <span class="font-bold text-white"><?php echo htmlspecialchars($_SESSION['username'] ?? ''); ?></span>
+                    </span>
+                    <a href="logout.php" class="text-[10px] font-bold text-rose-400 hover:text-rose-300 border border-slate-700 px-2.5 py-1.5 rounded-lg hover:bg-slate-800 transition-all">
+                        <i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Sign Out
+                    </a>
+                </div>
             </div>
+
+            
 
             <!-- Navigation Portals (ORDER SWAPPED FOR PMT AND API EXPLORER) -->
             <div class="flex items-center gap-1">

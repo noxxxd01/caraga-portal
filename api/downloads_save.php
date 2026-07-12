@@ -4,6 +4,24 @@
  */
 require_once __DIR__ . '/_bootstrap.php';
 
+            $target = (int)($_POST['target_trainings'] ?? 0);
+            $budget = (float)($_POST['unit_budget'] ?? 0);
+            $title = trim($_POST['title'] ?? '');
+            $subaro = trim($_POST['subaro_code'] ?? '');
+            $uacs = trim($_POST['uacs_code'] ?? '');
+
+            $errors = [];
+            if ($title === '') $errors[] = 'Title is required.';
+            if ($target < 1) $errors[] = 'Target Trainings must be at least 1.';
+            if ($budget < 0) $errors[] = 'Budget per Training cannot be negative.';
+            if ($subaro === '') $errors[] = 'Sub-ARO Code is required.';
+            if ($uacs === '') $errors[] = 'UACS Code is required.';
+
+            if (!empty($errors)) {
+                echo json_encode(['status' => 'error', 'message' => implode(' ', $errors)]);
+                exit;
+            }
+
             try {
                 $id = !empty($_POST['id']) ? $_POST['id'] : 'dl-' . time();
                 $sql = "INSERT INTO `pmt_downloads` (id, title, target_trainings, unit_budget, subaro_code, uacs_code, course_type, duration_hours, drive_link) 
@@ -31,7 +49,8 @@ require_once __DIR__ . '/_bootstrap.php';
                 ]);
                 echo json_encode(['status' => 'success']);
             } catch (PDOException $e) {
-                echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+                error_log($e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'A database error occurred. Please try again.']);
             }
             exit;
 

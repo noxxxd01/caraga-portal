@@ -231,6 +231,7 @@ function rebuildPMTWidgets() {
 function updatePMTAllocation(officeName, field, value) {
   const numVal = parseFloat(value) || 0;
   let formData = new FormData();
+  formData.append("csrf_token", CSRF_TOKEN);
   formData.append("office_name", officeName);
   formData.append("field", field);
   formData.append("value", numVal);

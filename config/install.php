@@ -78,6 +78,35 @@ try {
         PRIMARY KEY (`download_id`, `office_name`, `duration_bucket`)
     ) ENGINE=InnoDB");
 
+    // Table 6: participants (Participants Penetration tab - CSV bulk import +
+    // manual single registrant entries. province/municipality are auto-resolved
+    // from training_id against the trainings table at save time.)
+    $db->exec("CREATE TABLE IF NOT EXISTS `participants` (
+        `id` VARCHAR(50) NOT NULL PRIMARY KEY,
+        `participant_name` VARCHAR(255) NOT NULL,
+        `project` VARCHAR(255) NULL,
+        `program` VARCHAR(255) NULL,
+        `training_title` VARCHAR(255) NULL,
+        `training_date` DATE NULL,
+        `training_id` VARCHAR(50) NULL,
+        `cert_id` VARCHAR(100) NULL,
+        `certificate_type` VARCHAR(100) NULL,
+        `resource_person` VARCHAR(150) NULL,
+        `sex` ENUM('Male','Female') NOT NULL DEFAULT 'Male',
+        `province` VARCHAR(100) NULL,
+        `municipality` VARCHAR(100) NULL,
+        INDEX (`training_id`),
+        INDEX (`province`)
+    ) ENGINE=InnoDB");
+
+    // Table 7: users (login credentials for the portal)
+    $db->exec("CREATE TABLE IF NOT EXISTS `users` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `username` VARCHAR(50) NOT NULL UNIQUE,
+        `password_hash` VARCHAR(255) NOT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB");
+
     // Auto-upgrade check: add course_type/duration_hours to installs created before this update
     $hasCourseType = $db->query("SHOW COLUMNS FROM `trainings` LIKE 'course_type'")->fetch();
     if (!$hasCourseType) {
@@ -90,6 +119,18 @@ try {
     $hasImplementationMode = $db->query("SHOW COLUMNS FROM `trainings` LIKE 'implementation_mode'")->fetch();
     if (!$hasImplementationMode) {
         $db->exec("ALTER TABLE `trainings` ADD COLUMN `implementation_mode` VARCHAR(20) NOT NULL DEFAULT 'Face-to-Face' AFTER `duration_hours`");
+    }
+
+    // Seed exactly one default admin account, once ever — independent of the
+    // trainings/downloads 'seeded' flag below, so this always runs even on
+    // installs that were already fully seeded before login was added.
+    $usersSeeded = $db->query("SELECT meta_value FROM `app_meta` WHERE meta_key = 'users_seeded'")->fetchColumn();
+    if (!$usersSeeded) {
+        $defaultHash = password_hash('ChangeMe123!', PASSWORD_DEFAULT);
+        $db->prepare("INSERT INTO `users` (username, password_hash) VALUES (?, ?)")
+           ->execute(['admin', $defaultHash]);
+        $db->prepare("INSERT INTO `app_meta` (meta_key, meta_value) VALUES ('users_seeded', '1')
+                      ON DUPLICATE KEY UPDATE meta_value = '1'")->execute();
     }
 
     // Has the one-time seed already run? If so, skip ALL seeding below —
@@ -134,7 +175,7 @@ try {
 
         // Seed trainings (IGNORE = skip quietly if a row already exists)
         $t_stmt = $db->prepare("INSERT IGNORE INTO `trainings` (id, training_title, course_code, course_name, province, municipality, barangay, venue, latitude, longitude, start_date, end_date, course_officer, resource_person, course_type, duration_hours, target_participants, male_participants, female_participants, actual_participants, budget_allocated, budget_utilized, status, drive_link, photos, documents) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        
+
         $t_stmt->execute([
             "tr-101",
             "Information Security Management System Compliance Auditor",
@@ -163,7 +204,7 @@ try {
             1,
             1
         ]);
-        
+
         $t_stmt->execute([
             "tr-102",
             "Tech-Farming & Rural Impact Sourcing Digital Commerce",
@@ -255,25 +296,6 @@ try {
         // are later emptied out through the app's own delete actions.
         $db->prepare("INSERT INTO `app_meta` (meta_key, meta_value) VALUES ('seeded', '1')
                       ON DUPLICATE KEY UPDATE meta_value = '1'")->execute();
-
-        // from training_id against the trainings table at save time.)
-        $db->exec("CREATE TABLE IF NOT EXISTS `participants` (
-            `id` VARCHAR(50) NOT NULL PRIMARY KEY,
-            `participant_name` VARCHAR(255) NOT NULL,
-            `project` VARCHAR(255) NULL,
-            `program` VARCHAR(255) NULL,
-            `training_title` VARCHAR(255) NULL,
-            `training_date` DATE NULL,
-            `training_id` VARCHAR(50) NULL,
-            `cert_id` VARCHAR(100) NULL,
-            `certificate_type` VARCHAR(100) NULL,
-            `resource_person` VARCHAR(150) NULL,
-            `sex` ENUM('Male','Female') NOT NULL DEFAULT 'Male',
-            `province` VARCHAR(100) NULL,
-            `municipality` VARCHAR(100) NULL,
-            INDEX (`training_id`),
-            INDEX (`province`)
-        ) ENGINE=InnoDB");  
     }
 } catch (PDOException $e) {
     die("Table Initialization Failure: " . $e->getMessage());

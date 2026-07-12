@@ -1,4 +1,10 @@
-    <?php
+<?php
+/**
+ * POST (JSON body) -> bulk-inserts participant rows parsed client-side from
+ * an uploaded CSV. Expects a JSON array of objects with keys matching the
+ * CSV template headers (case-sensitive as exported by downloadCSVTemplate()).
+ * province/municipality are auto-resolved per row from training_id.
+ */
 require_once __DIR__ . '/_bootstrap.php';
 
 try {
@@ -7,6 +13,11 @@ try {
 
     if (!is_array($rows)) {
         echo json_encode(['status' => 'error', 'message' => 'Invalid or empty CSV payload.']);
+        exit;
+    }
+
+    if (count($rows) > 2000) {
+        echo json_encode(['status' => 'error', 'message' => 'CSV exceeds the 2,000 row limit. Please split it into smaller batches.']);
         exit;
     }
 
@@ -26,12 +37,19 @@ try {
 
     foreach ($rows as $row) {
         $name = trim($row['Participant Name'] ?? '');
-        if ($name === '') { $skipped++; continue; }
+        $sex = $row['Sex'] ?? 'Male';
+        if ($name === '' || !in_array($sex, ['Male', 'Female'], true)) {
+            $skipped++;
+            continue;
+        }
 
         $trainingId = trim($row['Training ID'] ?? '');
-        $province = '';
-        $municipality = '';
-        if ($trainingId) {
+        $province = trim($row['Province'] ?? '');
+        $municipality = trim($row['Municipality'] ?? '');
+
+        // Only fall back to the linked training's location if the CSV
+        // itself didn't specify one
+        if ($province === '' && $trainingId) {
             $lookupStmt->execute([$trainingId]);
             $match = $lookupStmt->fetch();
             if ($match) {
@@ -53,7 +71,7 @@ try {
             ':cert_id' => $row['CertID'] ?? '',
             ':cert_type' => $row['Certificate Type'] ?? '',
             ':resource_person' => $row['Resource Person'] ?? '',
-            ':sex' => (($row['Sex'] ?? 'Male') === 'Female') ? 'Female' : 'Male',
+            ':sex' => $sex,
             ':province' => $province,
             ':municipality' => $municipality
         ]);
@@ -62,5 +80,6 @@ try {
 
     echo json_encode(['status' => 'success', 'inserted' => $inserted, 'skipped' => $skipped]);
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    error_log($e->getMessage());
+    echo json_encode(['status' => 'error', 'message' => 'A database error occurred. Please try again.']);
 }

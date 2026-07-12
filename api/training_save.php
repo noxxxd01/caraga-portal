@@ -4,6 +4,37 @@
  */
 require_once __DIR__ . '/_bootstrap.php';
 
+            $targetParticipants = (int)($_POST['target_participants'] ?? 0);
+            $malePart = (int)($_POST['male_participants'] ?? 0);
+            $femalePart = (int)($_POST['female_participants'] ?? 0);
+            $budgetAllocated = (float)($_POST['budget_allocated'] ?? 0);
+            $budgetUtilized = (float)($_POST['budget_utilized'] ?? 0);
+            $title = trim($_POST['training_title'] ?? '');
+            $startDate = $_POST['start_date'] ?? '';
+            $endDate = $_POST['end_date'] ?? '';
+            $lat = (float)($_POST['latitude'] ?? 0);
+            $lng = (float)($_POST['longitude'] ?? 0);
+
+            $errors = [];
+            if ($title === '') $errors[] = 'Training title is required.';
+            if ($targetParticipants < 0) $errors[] = 'Target participants cannot be negative.';
+            if ($malePart < 0 || $femalePart < 0) $errors[] = 'Participant counts cannot be negative.';
+            if ($budgetAllocated < 0) $errors[] = 'Budget allocated cannot be negative.';
+            if ($budgetUtilized < 0) $errors[] = 'Budget utilized cannot be negative.';
+            if ($budgetUtilized > $budgetAllocated) $errors[] = 'Budget utilized cannot exceed budget allocated.';
+            if ($startDate === '' || $endDate === '') $errors[] = 'Start and end dates are required.';
+            if ($startDate !== '' && $endDate !== '' && strtotime($endDate) < strtotime($startDate)) {
+                $errors[] = 'End date cannot be before start date.';
+            }
+            if ($lat < 7.5 || $lat > 11.5 || $lng < 124.5 || $lng > 127.0) {
+                $errors[] = 'Coordinates must reside within standard Caraga regional limits.';
+            }
+
+            if (!empty($errors)) {
+                echo json_encode(['status' => 'error', 'message' => implode(' ', $errors)]);
+                exit;
+            }
+
             try {
                 $id = !empty($_POST['id']) ? $_POST['id'] : 'tr-' . time();
                 
@@ -84,6 +115,7 @@ require_once __DIR__ . '/_bootstrap.php';
 
                 echo json_encode(['status' => 'success']);
             } catch (PDOException $e) {
-                echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+                error_log($e->getMessage());
+                echo json_encode(['status' => 'error', 'message' => 'A database error occurred. Please try again.']);
             }
             exit;
